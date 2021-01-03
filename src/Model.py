@@ -221,12 +221,12 @@ class Model:
 
     def trainBatch(self, batch):
         "feed a batch into the NN to train it"
-        numBatchElements = len(batch.imgs)
-        sparse = self.toSparse(batch.gtTexts)
+        numBatchElements = len(batch.image)
+        sparse = self.toSparse(batch.trueText)
         rate = 0.01 if self.batchesTrained < 10 else (
             0.001 if self.batchesTrained < 10000 else 0.0001)  # decay learning rate
         evalList = [self.optimizer, self.loss]
-        feedDict = {self.inputImgs: batch.imgs, self.gtTexts: sparse,
+        feedDict = {self.inputImgs: batch.image, self.gtTexts: sparse,
                     self.seqLen: [Model.maxTextLen] * numBatchElements, self.learningRate: rate, self.is_train: True}
         (_, lossVal) = self.sess.run(evalList, feedDict)
         self.batchesTrained += 1
@@ -255,10 +255,10 @@ class Model:
         "feed a batch into the NN to recognize the texts"
 
         # decode, optionally save RNN output
-        numBatchElements = len(batch.imgs)
+        numBatchElements = len(batch.image)
         evalRnnOutput = self.dump or calcProbability
         evalList = [self.decoder] + ([self.ctcIn3dTBC] if evalRnnOutput else [])
-        feedDict = {self.inputImgs: batch.imgs, self.seqLen: [Model.maxTextLen] * numBatchElements,
+        feedDict = {self.inputImgs: batch.image, self.seqLen: [Model.maxTextLen] * numBatchElements,
                     self.is_train: False}
         evalRes = self.sess.run(evalList, feedDict)
         decoded = evalRes[0]

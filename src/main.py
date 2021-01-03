@@ -6,18 +6,18 @@ import argparse
 import cv2
 import editdistance
 
-from DataLoader import DataLoader, Batch
+from LoadData import Loader, BatchImages
 from Model import Model, DecoderType
-from SamplePreprocessor import preprocess
+from Preprocessing import preprocess
 
 
 class FilePaths:
     "filenames and paths to data"
     fnCharList = '../model/charList.txt'
     fnAccuracy = '../model/accuracy.txt'
-    fnTrain = '../data/'
-    fnInfer = '../data/test.png'
-    fnCorpus = '../data/corpus.txt'
+    fnTrain = '../../data/'
+    fnInfer = '../../data/test.png'
+    fnCorpus = '../../data/corpus.txt'
 
 
 def train(model, loader):
@@ -34,8 +34,8 @@ def train(model, loader):
         print('Train NN')
         loader.trainSet()
         while loader.hasNext():
-            iterInfo = loader.getIteratorInfo()
-            batch = loader.getNext()
+            iterInfo = loader.getIterator()
+            batch = loader.nextBatch()
             loss = model.trainBatch(batch)
             print('Batch:', iterInfo[0], '/', iterInfo[1], 'Loss:', loss)
 
@@ -69,19 +69,19 @@ def validate(model, loader):
     numWordOK = 0
     numWordTotal = 0
     while loader.hasNext():
-        iterInfo = loader.getIteratorInfo()
+        iterInfo = loader.getIterator()
         print('Batch:', iterInfo[0], '/', iterInfo[1])
-        batch = loader.getNext()
+        batch = loader.nextBatch()
         (recognized, _) = model.inferBatch(batch)
 
         print('Ground truth -> Recognized')
         for i in range(len(recognized)):
-            numWordOK += 1 if batch.gtTexts[i] == recognized[i] else 0
+            numWordOK += 1 if batch.trueText[i] == recognized[i] else 0
             numWordTotal += 1
-            dist = editdistance.eval(recognized[i], batch.gtTexts[i])
+            dist = editdistance.eval(recognized[i], batch.trueText[i])
             numCharErr += dist
-            numCharTotal += len(batch.gtTexts[i])
-            print('[OK]' if dist == 0 else '[ERR:%d]' % dist, '"' + batch.gtTexts[i] + '"', '->',
+            numCharTotal += len(batch.trueText[i])
+            print('[OK]' if dist == 0 else '[ERR:%d]' % dist, '"' + batch.trueText[i] + '"', '->',
                   '"' + recognized[i] + '"')
 
     # print validation result
@@ -94,7 +94,7 @@ def validate(model, loader):
 def infer(model, fnImg):
     "recognize text in image provided by file path"
     img = preprocess(cv2.imread(fnImg, cv2.IMREAD_GRAYSCALE), Model.imgSize)
-    batch = Batch(None, [img])
+    batch = BatchImages(None, [img])
     (recognized, probability) = model.inferBatch(batch, True)
     print('Recognized:', '"' + recognized[0] + '"')
     print('Probability:', probability[0])
@@ -122,7 +122,7 @@ def main():
     # train or validate on IAM dataset
     if args.train or args.validate:
         # load training data, create TF model
-        loader = DataLoader(FilePaths.fnTrain, Model.batchSize, Model.imgSize, Model.maxTextLen)
+        loader = Loader(FilePaths.fnTrain, Model.batchSize, Model.imgSize, Model.maxTextLen)
 
         # save characters of model for inference mode
         open(FilePaths.fnCharList, 'w').write(str().join(loader.charList))

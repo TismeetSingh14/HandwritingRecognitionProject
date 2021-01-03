@@ -4,7 +4,7 @@ import cv2
 
 def preprocess(img, imgSize, dataAugmentation=False):
 
-    if img == None:
+    if img is None:
         img = np.zeros((imgSize[1],imgSize[0]))
     
     if(dataAugmentation):

@@ -2,6 +2,7 @@ import os
 import random
 import cv2
 import numpy as np
+from Preprocessing import preprocess
 
 class SampleImages:
     def __init__(self,trueText, filePath):
@@ -55,8 +56,8 @@ class Loader:
         #     print("Damaged images expected:", badImagesReference)
         
         indexSplit = int(0.95 * len(self.samples))
-        self.trainSampleImages = samples[:indexSplit] 
-        self.validationSampleImages = samples[indexSplit:]
+        self.trainSampleImages = self.samples[:indexSplit] 
+        self.validationSampleImages = self.samples[indexSplit:]
 
         self.trainWords = [x.trueText for x in self.trainSampleImages]
         self.validationWords = [x.trueText for x in self.validationSampleImages]
@@ -66,43 +67,43 @@ class Loader:
         self.trainSet()
         self.charList = sorted(list(chars))
 
-        def labelTruncate(self, text, maxTextLen):
-            cost = 0
+    def labelTruncate(self, text, maxTextLen):
+        cost = 0
 
-            for i in range(len(text)):
+        for i in range(len(text)):
 
-                if i != 0 and text[i] == text[i-1]:
-                    cost += 2
+            if i != 0 and text[i] == text[i-1]:
+                cost += 2
 
-                else:
-                    cost += 1
+            else:
+                cost += 1
 
-                if cost > maxTextLen:
-                    return text[:i]
-            return text   
+            if cost > maxTextLen:
+                return text[:i]
+        return text   
 
-        def trainSet(self):
-            self.dataAugmentation = False
-            self.currIdx = 0
-            self.samples = self.validationSampleImages
+    def trainSet(self):
+        self.dataAugmentation = False
+        self.currIdx = 0
+        self.samples = self.validationSampleImages
 
-        def validationSet(self):
-            self.dataAugmentation = False
-            self.currIdx = 0
-            self.samples = self.validationSampleImages
+    def validationSet(self):
+        self.dataAugmentation = False
+        self.currIdx = 0
+        self.samples = self.validationSampleImages
 
-        def getIterator(self):
-            return (self.currIdx // self.batchSize + 1, len(self.samples) // self.batchSize) 
+    def getIterator(self):
+        return (self.currIdx // self.batchSize + 1, len(self.samples) // self.batchSize) 
 
-        def hasNext(self):
-            return self.currIdx + self.batchSize <= len(self.samples)
+    def hasNext(self):
+        return self.currIdx + self.batchSize <= len(self.samples)
 
-        def nextBatch(self):
-            rangeOfBatch = range(self.currIdx, self.currIdx + self.batchSize)
-            trueText = [self.samples[i].trueText for i in rangeOfBatch]
+    def nextBatch(self):
+        rangeOfBatch = range(self.currIdx, self.currIdx + self.batchSize)
+        trueText = [self.samples[i].trueText for i in rangeOfBatch]
 
-            imgs = [
-                preprocess(cv2.imread(self.samples[i].filePath, cv2.IMREAD_GRAYSCALE), self.imgSize, self.dataAugmentation) for i in rangeOfBatch]
+        imgs = [
+            preprocess(cv2.imread(self.samples[i].filePath, cv2.IMREAD_GRAYSCALE), self.imgSize, self.dataAugmentation) for i in rangeOfBatch]
 
-            self.currIdx += self.batchSize
-            return BatchImages(trueText, imgs)   
+        self.currIdx += self.batchSize
+        return BatchImages(trueText, imgs)   
